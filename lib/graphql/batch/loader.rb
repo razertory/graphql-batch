@@ -44,9 +44,10 @@ module GraphQL::Batch
 
     def resolve #:nodoc:
       return if resolved?
-      load_keys = queue
+      @load_keys = queue
       @queue = nil
       perform(load_keys)
+      load_data
       check_for_broken_promises(load_keys)
     rescue => err
       reject_pending_promises(load_keys, err)
@@ -93,6 +94,14 @@ module GraphQL::Batch
     # Override to use a different key for the cache than the load key
     def cache_key(load_key)
       load_key
+    end
+
+    def load_data
+      return unless block_given?
+
+      @load_key.each do|key|
+        fulfill(key, yield(key))
+      end
     end
 
     private
